@@ -218,6 +218,17 @@ export const OVERVIEW_NESTED_BAR_HEIGHT_IN = px(20);
 export const BAR_RADIUS_IN = px(8);
 export const MIN_BAR_WIDTH_IN = px(8);
 
+/** A bar carries no text of its own — the task's name sits in the column to its
+ * left. It is still drawn as a *text frame* rather than a plain shape, so that
+ * someone labelling a bar in PowerPoint after the export types at the deck's
+ * size and flush to the bar's edge, instead of at PowerPoint's default 18pt
+ * inset by a default margin. An empty frame carries nothing else.
+ *
+ * `BAR_OUTLINE_WIDTH_PT` only restates the width `addShape` applied silently on
+ * its own: `addText` has no such default, and the bar may not change width. */
+export const BAR_OUTLINE_WIDTH_PT = 1;
+export const BAR_TYPING_FONT_SIZE_PT = 10;
+
 /** The "today" rule (`:66`): 2px of --destructive at 80%, the full height of
  * the rows area. */
 export const TODAY_LINE_WIDTH_PT = 1.5;

@@ -25,7 +25,9 @@ import {
   BACK_LINK_TEXT,
   BACK_LINK_WIDTH_IN,
   BACK_LINK_Y_IN,
+  BAR_OUTLINE_WIDTH_PT,
   BAR_RADIUS_IN,
+  BAR_TYPING_FONT_SIZE_PT,
   CARD_BORDER_WIDTH_PT,
   CARD_BOTTOM_IN,
   CARD_HEIGHT_IN,
@@ -424,14 +426,24 @@ function drawOverviewSlide(slide: PptxSlide, model: OverviewSlideModel, links: S
   });
 
   model.bars.forEach((bar) => {
-    slide.addShape('roundRect', {
+    // A bar holds no text, yet it is `addText` and not `addShape`: only a text
+    // frame is given `<a:bodyPr>` insets and an `<a:endParaRPr>`, and those are
+    // what a reader inherits who labels the bar in PowerPoint after the export.
+    // `addShape` accepts `margin` and `fontSize` and silently drops both.
+    // `width`/`dashType` restate the outline `addShape` applied by default, so
+    // the drawn bar is unchanged to the byte.
+    const barTint = { color: bar.color, transparency: Math.round((1 - bar.fillAlpha) * 100) };
+    slide.addText('', {
       x: bar.barX,
       y: bar.barY,
       w: bar.barWidth,
       h: bar.barHeight,
+      shape: 'roundRect',
       rectRadius: BAR_RADIUS_IN,
-      fill: { color: bar.color, transparency: Math.round((1 - bar.fillAlpha) * 100) },
-      line: { color: bar.color, transparency: Math.round((1 - bar.fillAlpha) * 100) },
+      fill: barTint,
+      line: { ...barTint, width: BAR_OUTLINE_WIDTH_PT, dashType: 'solid' },
+      margin: 0,
+      fontSize: BAR_TYPING_FONT_SIZE_PT,
       ...barJump(bar),
     });
 
