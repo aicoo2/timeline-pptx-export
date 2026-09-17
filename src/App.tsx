@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { GanttScreen } from './gantt/GanttScreen'
 import { GanttToolbar } from './gantt/GanttToolbar'
 import { SettingsFlyout } from './components/SettingsFlyout'
-import { ExportOverflowModal } from './components/ExportOverflowModal'
 import { ImportModal } from './components/ImportModal'
 import { ExportMenu, type DeckFormat, type ExportFormat } from './components/ExportMenu'
 import { Settings } from 'lucide-react'
@@ -11,19 +10,9 @@ import { exportTimelineToPptx } from './export/pptxExporter'
 import { exportTimelineToPdf } from './export/pdfExporter'
 import { downloadPlanCsv } from './export/planCsv'
 import { exportPlanToJsonFile } from './import/planJson'
-import { getExportOverviewItems, planOverview, type ExportMode } from './export/timelineExportModel'
 import { buildExportFilename } from './export/dateScale'
-import { sortItemsForExport } from './utils/sortItemsForExport'
 import { flushedActivePlan, useTimelineStore } from './store/timelineStore'
 import { buttonBaseClass } from './components/systemUi';
-
-/** The export the user asked for, held while the overflow modal asks how to
- * handle the tasks that don't fit on one overview slide. */
-interface PendingOverflowExport {
-  format: DeckFormat
-  totalTasks: number
-  capacity: number
-}
 
 function App() {
   const loadPlans = useTimelineStore((state) => state.loadPlans)
@@ -35,7 +24,6 @@ function App() {
   // it — a branch worth its own deck has its own plan now (see
   // createPlanFromBranch). What a deck leaves out is said per task, with
   // "Exclude from export", and the exporters read that themselves.
-  const [overflow, setOverflow] = useState<PendingOverflowExport | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   // Only for the Export menu's JSON row, which is disabled until there is a
   // plan record to write. Everything else about that file is read at the click
@@ -47,23 +35,21 @@ function App() {
     void loadPlans()
   }, [loadPlans])
 
-  const runExport = (format: DeckFormat, exportMode: ExportMode) => {
+  const runExport = (format: DeckFormat) => {
     const fileName = buildExportFilename(exportOptions.exportTimeframe, format)
     const exportTimeline = format === 'pptx' ? exportTimelineToPptx : exportTimelineToPdf
-    void exportTimeline(items, exportOptions, comments, fileName, exportMode)
+    // Always 'full': every exportable task reaches the deck, paged across as
+    // many overview slides as that takes. A plan that fits on one slide still
+    // gets one — 'full' and 'compact' only differ once there are more tasks
+    // than fit, and at that point silently dropping the rest is not a thing
+    // an export should do on its own.
+    void exportTimeline(items, exportOptions, comments, fileName, 'full')
   }
 
-  // More tasks in the effective date range than fit on one overview slide is a
-  // real choice (truncate to one slide vs. page across several), so it goes to
-  // the user rather than being decided here. Everything fitting exports
-  // straight away — the two modes would produce the same file.
-  //
-  // Counted over every exportable task, not just the roots: the overview draws
-  // subtasks as bars too, so the roots alone would under-count what has to fit.
   const handleExport = (format: ExportFormat) => {
-    // A table has no slides, so none of the paging question below is one it
-    // can be asked: every exportable task is a row, however many there are.
-    // The filename is built by the same rule as the other two.
+    // A table has no slides to page across at all: every exportable task is a
+    // row, however many there are. The filename is built by the same rule as
+    // the other two.
     if (format === 'csv') {
       downloadPlanCsv(items, buildExportFilename(exportOptions.exportTimeframe, 'csv'))
       return
@@ -79,15 +65,7 @@ function App() {
       return
     }
 
-    const overviewItems = getExportOverviewItems(sortItemsForExport(items))
-    const plan = planOverview(overviewItems, exportOptions.exportTimeframe)
-
-    if (plan.inRange.length <= plan.capacity) {
-      runExport(format, 'compact')
-      return
-    }
-
-    setOverflow({ format, totalTasks: plan.inRange.length, capacity: plan.capacity })
+    runExport(format)
   }
 
   // The shell is `100vh` tall, and `100dvh` below the mobile breakpoint. On
@@ -156,17 +134,6 @@ function App() {
 
       {isImportOpen && <ImportModal onClose={() => setIsImportOpen(false)} />}
 
-      {overflow && (
-        <ExportOverflowModal
-          totalTasks={overflow.totalTasks}
-          capacity={overflow.capacity}
-          onSelect={(exportMode) => {
-            runExport(overflow.format, exportMode)
-            setOverflow(null)
-          }}
-          onCancel={() => setOverflow(null)}
-        />
-      )}
     </div>
   )
 }

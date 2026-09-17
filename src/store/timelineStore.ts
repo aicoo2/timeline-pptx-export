@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ExportOptions, TaskComment, TimelineItem } from '../types/timeline';
-import { copyBranch, droppedDependencyNotice, uniquePlanName } from '../utils/branchPlan';
+import { uniquePlanName } from '../utils/branchPlan';
 import { normalizePlanItems } from '../utils/normalizePlanItems';
 import { repairNotice, type PlanNotice } from '../utils/planNotice';
 import { getDescendantIds } from '../utils/taskHierarchy';
@@ -60,10 +60,6 @@ interface TimelineStore {
    * a new name. */
   renamePlan: (id: string, name: string) => Promise<void>;
   switchToPlan: (id: string) => Promise<void>;
-  /** Copies one task and its whole sub-tree into a plan of its own, saves it
-   * beside the others and opens it. The plan it was taken from is left
-   * exactly as it was — see utils/branchPlan.ts for what is copied. */
-  createPlanFromBranch: (rootId: string) => Promise<void>;
   deletePlan: (id: string) => Promise<void>;
 }
 
@@ -476,7 +472,7 @@ export const useTimelineStore = create<TimelineStore>()(
         const target = state.savedPlans.find((plan) => plan.id === id);
         if (!target) return;
 
-        // Unique for the same reason a branch's plan name is: two plans
+        // Unique for the same reason a new plan's name is: two plans
         // answering to one name are two rows in the switcher that cannot be
         // told apart.
         const unique = uniquePlanName(
@@ -524,64 +520,6 @@ export const useTimelineStore = create<TimelineStore>()(
           // commented on.
           comments: targetPlan.comments,
           exportOptions: targetPlan.exportOptions,
-        }));
-      },
-
-      createPlanFromBranch: async (rootId) => {
-        const state = get();
-        const root = state.items.find((item) => item.id === rootId);
-        if (!root) return;
-
-        const branch = copyBranch(state.items, state.comments, rootId);
-        if (!branch) return;
-
-        const now = new Date().toISOString();
-        const plan: SavedPlan = {
-          id: crypto.randomUUID(),
-          name: uniquePlanName(
-            root.label,
-            state.savedPlans.map((saved) => saved.name),
-          ),
-          items: branch.items,
-          // Copied with the tasks they are about, re-pointed at the copies'
-          // new ids by copyBranch. The originals stay on the original tasks,
-          // in the plan those are still in.
-          comments: branch.comments,
-          // The settings the branch was already going to be exported under:
-          // theme, scale, order, window and comment mode are facts about how a
-          // deck is read, not about which tasks are in one.
-          exportOptions: state.exportOptions,
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        // The plan this came out of is saved on the way past, exactly as it is
-        // when one is switched away from: taking a copy of a branch changes
-        // nothing about the plan that branch is still in.
-        const flushed = flushedActivePlan(state);
-        if (flushed) await persistPlan(flushed);
-        await persistPlan(plan);
-
-        const notice = droppedDependencyNotice(branch.droppedDependencies, root.label);
-
-        set((current) => ({
-          savedPlans: [
-            ...(flushed
-              ? current.savedPlans.map((saved) => (saved.id === flushed.id ? flushed : saved))
-              : current.savedPlans),
-            plan,
-          ],
-          activePlanId: plan.id,
-          title: plan.name,
-          items: plan.items,
-          exportOptions: plan.exportOptions,
-          // The new plan's own, which is the copies and nothing else: the
-          // plan being left keeps the originals, and they went to the database
-          // with it in the flush above.
-          comments: plan.comments,
-          planNotices: notice
-            ? mergePlanNotices(current.planNotices, { [plan.id]: notice })
-            : current.planNotices,
         }));
       },
 

@@ -444,6 +444,7 @@ function drawOverviewSlide(slide: PptxSlide, model: OverviewSlideModel, links: S
       line: { ...barTint, width: BAR_OUTLINE_WIDTH_PT, dashType: 'solid' },
       margin: 0,
       fontSize: BAR_TYPING_FONT_SIZE_PT,
+      align: 'center',
       ...barJump(bar),
     });
 

@@ -221,7 +221,7 @@ export const MIN_BAR_WIDTH_IN = px(8);
 /** A bar carries no text of its own — the task's name sits in the column to its
  * left. It is still drawn as a *text frame* rather than a plain shape, so that
  * someone labelling a bar in PowerPoint after the export types at the deck's
- * size and flush to the bar's edge, instead of at PowerPoint's default 18pt
+ * size and centred in it, instead of at PowerPoint's default 18pt, left and
  * inset by a default margin. An empty frame carries nothing else.
  *
  * `BAR_OUTLINE_WIDTH_PT` only restates the width `addShape` applied silently on

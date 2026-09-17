@@ -252,17 +252,13 @@
   box-shadow: inset -2px 0 0 var(--gantt-handle-hover-inset);
 }
 
-/* The sub-task count badge, which is a button (it opens the focused view of
- * the branch it counts). Hover darkens the slate one step — to --gantt-text,
- * a value already transcribed above, so the hover state introduces no colour
- * of its own. Colour only: nothing about the badge moves. */
-.gantt-subcount {
-  transition: background-color 150ms;
-}
-
-.gantt-subcount:hover {
-  background: var(--gantt-text);
-}
+/* The sub-task count badge, which is a label and not a control: it counts the
+ * sub-tasks on the row and does nothing when pressed. It used to be a button
+ * that copied its branch into a plan of its own, and it kept a hover fill from
+ * those days — the one thing left on it that still promised a click. A count
+ * does not react to the pointer, so the fill and the transition it faded are
+ * both gone. The row underneath still takes the hover, and the pointer over
+ * this badge is the row's. */
 
 /* A name in the task column is editable on double-click, and the pill that
  * used to advertise it — a blue border and fill around every task, at rest,

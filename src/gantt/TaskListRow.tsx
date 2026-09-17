@@ -20,7 +20,6 @@ interface TaskListRowProps {
   /** Lift this row and everything under it out into a plan of its own. Only
    * ever called from a group's count badge, which is the one row element that
    * names the sub-tasks it would take with it. */
-  onMakePlan: () => void;
   /** Create a sub-task under this row and start renaming it. */
   onAddSubtask: () => void;
   onContextMenu: (event: React.MouseEvent) => void;
@@ -73,7 +72,6 @@ export function TaskListRow({
   onSelect,
   onToggleCollapse,
   onCycleStatus,
-  onMakePlan,
   onAddSubtask,
   onContextMenu,
 }: TaskListRowProps) {
@@ -267,21 +265,17 @@ export function TaskListRow({
         </span>
       )}
 
-      {/* The count badge is also the way to lift this branch out into a plan
-          of its own: it is the one thing on the row that already names the
-          sub-tasks that would come along, so it carries the click rather than
-          a second control appearing beside it. Looking at the branch without
-          copying it is the context menu's "Show only sub-tasks". */}
+      {/* How many sub-tasks the row has, and nothing more. It used to carry a
+          click that copied the branch into a plan of its own and opened it,
+          which is the one thing this badge must not do: a plan is something
+          made deliberately from "New plan", and a branch opened as one both
+          hid the rest of the plan and left a second entry in the switcher
+          that nobody had asked for. A count is a fact about the row, so it is
+          rendered as one. */}
       {isGroup && (
-        <button
-          type="button"
+        <span
           className="gantt-subcount"
-          onClick={(event) => {
-            event.stopPropagation();
-            onMakePlan();
-          }}
-          title="Make a separate plan from this branch"
-          aria-label={`Make a separate plan from ${item.label} and everything under it`}
+          title={`${childCount} sub-task${childCount === 1 ? '' : 's'}`}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -296,12 +290,11 @@ export function TaskListRow({
             color: 'var(--gantt-surface)',
             fontSize: 10,
             fontWeight: 600,
-            cursor: 'pointer',
           }}
         >
           <Layers size={10} strokeWidth={2.4} aria-hidden="true" />
           {childCount}
-        </button>
+        </span>
       )}
 
       {/* A top-level row can take a sub-task — a task with one is simply a

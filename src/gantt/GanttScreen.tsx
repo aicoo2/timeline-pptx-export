@@ -81,7 +81,6 @@ export function GanttScreen() {
   const updateItem = useTimelineStore((state) => state.updateItem);
   const addItem = useTimelineStore((state) => state.addItem);
   const toggleIncludeInExportCascade = useTimelineStore((state) => state.toggleIncludeInExportCascade);
-  const createPlanFromBranch = useTimelineStore((state) => state.createPlanFromBranch);
   const activePlanId = useTimelineStore((state) => state.activePlanId);
 
   const scale = useGanttViewStore((state) => state.scale);
@@ -564,16 +563,6 @@ export function GanttScreen() {
     beginRename(task.id, task.label);
   };
 
-  /** The sub-task count badge's action: this row and everything under it,
-   * copied into a plan of its own, which then opens.
-   *
-   * A copy, not a view: the plan it was taken from keeps every task it had
-   * and is still in the switcher; the new one is a plan like any other, so it
-   * is edited, saved and exported like any other. */
-  const makePlanFromBranch = (id: string) => {
-    void createPlanFromBranch(id);
-  };
-
   /** This item and every group under it — what "the branch" means to the
    * action that folds one away. */
   const branchGroupIds = (id: string): string[] => {
@@ -597,9 +586,8 @@ export function GanttScreen() {
    * sub-tasks has no branch to fold away, and a task that is itself a
    * sub-task takes no sub-tasks of its own.
    *
-   * Making a plan out of a branch is not among them: it is the sub-task count
-   * badge's click, and the badge is the one thing on a row that already names
-   * the sub-tasks that would come along. */
+   * Making a plan out of a branch is not among them, and is not offered
+   * anywhere else either: plans are made from "New plan" and nothing else. */
   const menuActions = (id: string): ContextMenuAction[] => {
     const isBranch = isGroup(items, id);
     const isIncluded = items.find((candidate) => candidate.id === id)?.includeInExport !== false;
@@ -895,7 +883,6 @@ export function GanttScreen() {
               onCycleStatus={cycleStatus}
               onRename={(id, name) => updateItem(id, { label: name })}
               onAddTask={addTask}
-              onMakePlan={makePlanFromBranch}
               onAddSubtask={addSubtask}
               onContextMenu={openMenu}
             />
